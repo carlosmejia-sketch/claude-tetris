@@ -17,6 +17,23 @@ const COLORS = [
   '#222831', // Bomba (se dibuja con render propio)
 ];
 
+// Paletas por skin (índices 1-7 = piezas normales). Nut(8)/Bomba(9) conservan
+// su tratamiento propio (se toman de COLORS via buildColors).
+const RETRO_PALETTE  = ['#4dd0e1', '#ffd54f', '#ba68c8', '#81c784', '#e57373', '#64b5f6', '#ffb74d'];
+const NEON_PALETTE   = ['#00eaff', '#fff600', '#ff2fd0', '#39ff14', '#ff003c', '#2979ff', '#ff9100'];
+const PASTEL_PALETTE = ['#a0e7e5', '#fbf8cc', '#d0bdf4', '#b9fbc0', '#ffb3c1', '#a3c4f3', '#ffd6a5'];
+const PIXEL_PALETTE  = ['#00b8d4', '#ffca28', '#ab47bc', '#66bb6a', '#ef5350', '#42a5f5', '#ffa726'];
+
+// Cada skin aporta su paleta y su función de dibujo de celda normal. drawBlock
+// consulta la skin activa. Las funciones drawCell están declaradas más abajo
+// (el hoisting de function declarations las hace visibles aquí).
+const SKINS = {
+  retro:  { label: 'Retro',  palette: RETRO_PALETTE,  drawCell: drawRetroCell },
+  neon:   { label: 'Neón',   palette: NEON_PALETTE,   drawCell: drawNeonCell },
+  pastel: { label: 'Pastel', palette: PASTEL_PALETTE, drawCell: drawPastelCell },
+  pixel:  { label: 'Pixel',  palette: PIXEL_PALETTE,  drawCell: drawPixelCell },
+};
+
 const PIECES = [
   null,
   [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
@@ -55,14 +72,24 @@ const pauseRestartBtn = document.getElementById('pause-restart-btn');
 const toggleControlsBtn = document.getElementById('toggle-controls-btn');
 const pauseControls = document.getElementById('pause-controls');
 const startLevelSelect = document.getElementById('start-level');
+const skinSelect = document.getElementById('skin-select');
 
 const THEME_KEY = 'tetris-theme';
 const START_LEVEL_KEY = 'tetris-start-level';
+const SKIN_KEY = 'tetris-skin';
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let playTime, lastBombTime;
 let startLevel = 1;
 let gridLineColor = '#22222e';
+let activeSkin = 'retro';
+// Paleta activa (1-indexada, con null líder y Nut/Bomba al final). La define applySkin().
+let activeColors = buildColors(RETRO_PALETTE);
+
+// Construye la paleta 1-indexada de la skin activa conservando Nut(8) y Bomba(9).
+function buildColors(palette) {
+  return [null, ...palette, COLORS[8], COLORS[9]];
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -235,6 +262,80 @@ function drawBombCell(context, x, y, size) {
   context.stroke();
 }
 
+// Trazado de rectángulo con esquinas redondeadas (fallback portable, no depende
+// de CanvasRenderingContext2D.roundRect).
+function roundRectPath(context, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+// --- Renderizadores de celda por skin ---
+
+// Retro: bloque cuadrado, color plano + highlight (estilo original).
+function drawRetroCell(context, x, y, color, size) {
+  context.fillStyle = color;
+  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+}
+
+// Neón: bloque hueco con borde brillante y glow (shadowBlur/shadowColor).
+// Usa save/restore para no contaminar el estado del contexto (shadow, etc.).
+function drawNeonCell(context, x, y, color, size) {
+  const px = x * size + 2, py = y * size + 2, s = size - 4;
+  context.save();
+  context.shadowColor = color;
+  context.shadowBlur = 10;
+  context.fillStyle = color;
+  context.fillRect(px, py, s, s);
+  // núcleo oscuro para que el color se lea como neón
+  context.shadowBlur = 0;
+  context.fillStyle = 'rgba(0,0,0,0.55)';
+  context.fillRect(px + 3, py + 3, s - 6, s - 6);
+  // borde brillante con glow
+  context.shadowBlur = 8;
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  context.strokeRect(px + 1, py + 1, s - 2, s - 2);
+  context.restore();
+}
+
+// Pastel: colores suaves con esquinas redondeadas y highlight tenue.
+function drawPastelCell(context, x, y, color, size) {
+  const px = x * size + 2, py = y * size + 2, s = size - 4;
+  const r = Math.max(3, s / 4);
+  context.fillStyle = color;
+  roundRectPath(context, px, py, s, s, r);
+  context.fill();
+  context.fillStyle = 'rgba(255,255,255,0.28)';
+  roundRectPath(context, px, py, s, s * 0.45, r);
+  context.fill();
+}
+
+// Pixel art: color base + sub-cuadrícula de dithering (tablero de ajedrez) y borde.
+function drawPixelCell(context, x, y, color, size) {
+  const px = x * size + 1, py = y * size + 1, s = size - 2;
+  context.fillStyle = color;
+  context.fillRect(px, py, s, s);
+  const n = 4;
+  const cell = s / n;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      context.fillStyle = (i + j) % 2 === 0 ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.18)';
+      context.fillRect(px + i * cell, py + j * cell, cell, cell);
+    }
+  }
+  context.strokeStyle = 'rgba(0,0,0,0.45)';
+  context.lineWidth = 1;
+  context.strokeRect(px + 0.5, py + 0.5, s - 1, s - 1);
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
   context.globalAlpha = alpha ?? 1;
@@ -243,12 +344,8 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
     context.globalAlpha = 1;
     return;
   }
-  const color = COLORS[colorIndex];
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  const color = activeColors[colorIndex];
+  SKINS[activeSkin].drawCell(context, x, y, color, size);
   context.globalAlpha = 1;
 }
 
@@ -442,6 +539,34 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem(THEME_KEY, newTheme);
 });
 
+// Skin: dimensión independiente del tema claro/oscuro. Cambia la paleta y la
+// función de dibujo de bloques en ambos canvas, sin recargar.
+function applySkin(skin) {
+  if (!SKINS[skin]) skin = 'retro';
+  activeSkin = skin;
+  activeColors = buildColors(SKINS[skin].palette);
+  document.documentElement.setAttribute('data-skin', skin);
+  // algunas skins (neón) ajustan --grid-line vía CSS; re-leer el valor efectivo
+  gridLineColor = getComputedStyle(document.documentElement).getPropertyValue('--grid-line').trim();
+  if (skinSelect) skinSelect.value = skin;
+}
+
+function initSkin() {
+  const saved = localStorage.getItem(SKIN_KEY);
+  applySkin(SKINS[saved] ? saved : 'retro');
+}
+
+if (skinSelect) {
+  skinSelect.addEventListener('change', () => {
+    applySkin(skinSelect.value);
+    localStorage.setItem(SKIN_KEY, skinSelect.value);
+    // refrescar de inmediato (importante si el juego está en pausa)
+    if (current) draw();
+    if (next) drawNext();
+  });
+}
+
 initTheme();
 initStartLevel();
+initSkin();
 init();

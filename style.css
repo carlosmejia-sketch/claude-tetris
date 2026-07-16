@@ -88,6 +88,40 @@ body {
   gap: 8px;
 }
 
+.skin-control {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skin-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--label-color);
+}
+
+.skin-select {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.skin-select:focus-visible {
+  outline: 2px solid var(--value-color);
+  outline-offset: 1px;
+}
+
 .theme-label {
   font-size: 11px;
   letter-spacing: 1px;
@@ -333,4 +367,12 @@ kbd {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ---- Skin: Neón (fondo oscuro para realzar el glow del canvas) ---- */
+/* Se coloca al final para ganar el empate de especificidad con los temas. */
+:root[data-skin="neon"] {
+  --board-bg: #05050c;
+  --board-shadow: rgba(0, 0, 0, 0.85);
+  --grid-line: #16162e;
 }

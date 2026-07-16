@@ -52,6 +52,9 @@ jobs:
 
             5. Publica UN comentario con:
                gh issue comment ${{ github.event.issue.number }} --body "<contenido>"
+               El comentario DEBE estar escrito en formato Markdown válido que GitHub
+               pueda renderizar correctamente (encabezados `##`, listas `-`, negritas
+               `**texto**`, bloques de código con ``` y referencias a código con backticks).
                El comentario debe incluir estas secciones en Markdown:
                - **Resumen**: el problema o solicitud en 1-2 frases.
                - **Causa probable / análisis**: qué está ocurriendo y por qué.

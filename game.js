@@ -49,11 +49,29 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
+const pauseMenu = document.getElementById('pause-menu');
+const menuMain = document.getElementById('menu-main');
+const menuControls = document.getElementById('menu-controls');
+const resumeBtn = document.getElementById('resume-btn');
+const menuRestartBtn = document.getElementById('menu-restart-btn');
+const controlsBtn = document.getElementById('controls-btn');
+const controlsBackBtn = document.getElementById('controls-back-btn');
+const levelDownBtn = document.getElementById('level-down');
+const levelUpBtn = document.getElementById('level-up');
+const startLevelValueEl = document.getElementById('start-level-value');
+
 const THEME_KEY = 'tetris-theme';
+const START_LEVEL_KEY = 'tetris-start-level';
+const MAX_START_LEVEL = 15;
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let playTime, lastBombTime;
+let startLevel = 1;
 let gridLineColor = '#22222e';
+
+function speedForLevel(lvl) {
+  return Math.max(100, 1000 - (lvl - 1) * 90);
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -149,8 +167,8 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    level = Math.max(startLevel, Math.floor(lines / 10) + 1);
+    dropInterval = speedForLevel(level);
     updateHUD();
   }
 }
@@ -301,18 +319,34 @@ function endGame() {
   overlay.classList.remove('hidden');
 }
 
+function showMenuMain() {
+  menuControls.classList.add('hidden');
+  menuMain.classList.remove('hidden');
+}
+
+function showMenuControls() {
+  menuMain.classList.add('hidden');
+  menuControls.classList.remove('hidden');
+}
+
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    pauseMenu.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    showMenuMain();
+    pauseMenu.classList.remove('hidden');
   }
+}
+
+function setStartLevel(n) {
+  startLevel = Math.min(MAX_START_LEVEL, Math.max(1, n));
+  startLevelValueEl.textContent = startLevel;
+  localStorage.setItem(START_LEVEL_KEY, startLevel);
 }
 
 function loop(ts) {
@@ -336,10 +370,10 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = speedForLevel(level);
   dropAccum = 0;
   playTime = 0;
   lastBombTime = 0;
@@ -348,12 +382,20 @@ function init() {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseMenu.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    // Dentro del submenú de controles, Esc vuelve al menú principal.
+    if (paused && !menuControls.classList.contains('hidden')) { showMenuMain(); return; }
+    togglePause();
+    return;
+  }
   if (e.code === 'KeyP') { togglePause(); return; }
+  // Menú abierto ⇒ el juego no recibe inputs (evita movimientos accidentales al volver).
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -378,6 +420,19 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+
+resumeBtn.addEventListener('click', togglePause);
+menuRestartBtn.addEventListener('click', () => { pauseMenu.classList.add('hidden'); init(); });
+controlsBtn.addEventListener('click', showMenuControls);
+controlsBackBtn.addEventListener('click', showMenuMain);
+levelDownBtn.addEventListener('click', () => setStartLevel(startLevel - 1));
+levelUpBtn.addEventListener('click', () => setStartLevel(startLevel + 1));
+
+function initStartLevel() {
+  const saved = parseInt(localStorage.getItem(START_LEVEL_KEY), 10);
+  setStartLevel(Number.isFinite(saved) ? saved : 1);
+}
+initStartLevel();
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);

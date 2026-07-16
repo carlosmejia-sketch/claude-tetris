@@ -146,6 +146,11 @@ body {
   padding-top: 4px;
 }
 
+/* Panel de records siempre visible (izquierda) */
+.side-panel .records-title {
+  display: none;
+}
+
 .panel-section {
   display: flex;
   flex-direction: column;
@@ -222,19 +227,193 @@ kbd {
   flex-direction: column;
   gap: 12px;
   align-items: center;
+  width: 260px;
+  max-width: 90%;
 }
 
-#overlay-title {
+.overlay-title {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: 4px;
   color: var(--overlay-title-color);
 }
 
-#overlay-score {
+.start-title {
+  color: var(--title-color);
+}
+
+.overlay-score {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   color: var(--overlay-score-color);
+}
+
+/* ---- Tabla de records ---- */
+.records-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.records-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  color: var(--label-color);
+}
+
+.records-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.record-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.record-rank {
+  width: 16px;
+  text-align: right;
+  color: var(--label-color);
+  font-weight: 700;
+}
+
+.record-name {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-score {
+  color: var(--value-color);
+  font-weight: 700;
+}
+
+.record-highlight {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+}
+
+.record-highlight .record-rank,
+.record-highlight .record-score {
+  color: var(--btn-color);
+}
+
+.record-empty {
+  font-size: 12px;
+  color: var(--controls-color);
+  padding: 4px 0;
+}
+
+.records-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--controls-color);
+  padding-top: 4px;
+  border-top: 1px solid var(--board-border);
+}
+
+.records-stats strong {
+  color: var(--value-color);
+}
+
+/* ---- Ingreso de nombre ---- */
+.name-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.name-entry.hidden {
+  display: none;
+}
+
+.name-prompt {
+  font-size: 13px;
+  color: var(--overlay-score-color);
+  font-weight: 600;
+}
+
+.name-row {
+  display: flex;
+  gap: 8px;
+}
+
+#name-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+#name-input:focus {
+  outline: none;
+  border-color: var(--btn-bg);
+}
+
+#save-record-btn {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#save-record-btn:hover {
+  background: var(--btn-hover-bg);
+}
+
+#save-record-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.start-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--controls-color);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--overlay-title-color);
+  color: var(--overlay-title-color);
 }
 
 #restart-btn {

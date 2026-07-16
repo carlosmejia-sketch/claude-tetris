@@ -26,6 +26,13 @@
       </div>
     </div>
     <div class="game-container">
+      <aside class="panel side-panel">
+        <div class="panel-section">
+          <span class="label">RECORDS</span>
+          <div id="side-records" class="records-block"></div>
+        </div>
+      </aside>
+
       <canvas id="board" width="300" height="600"></canvas>
 
       <aside class="panel">
@@ -61,11 +68,36 @@
       </aside>
     </div>
 
-    <div id="overlay" class="overlay hidden">
+    <div id="pause-overlay" class="overlay hidden">
       <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
-        <p id="overlay-score"></p>
+        <p class="overlay-title">PAUSA</p>
+      </div>
+    </div>
+
+    <div id="gameover-overlay" class="overlay hidden">
+      <div class="overlay-box">
+        <p class="overlay-title gameover-title">GAME OVER</p>
+        <p id="gameover-score" class="overlay-score"></p>
+        <div id="name-entry" class="name-entry hidden">
+          <label class="name-prompt" for="name-input">¡Entraste al top! Tu nombre:</label>
+          <div class="name-row">
+            <input id="name-input" type="text" maxlength="12" placeholder="Jugador" autocomplete="off" />
+            <button id="save-record-btn">Guardar</button>
+          </div>
+        </div>
+        <div id="gameover-records" class="records-block"></div>
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div id="start-overlay" class="overlay hidden">
+      <div class="overlay-box">
+        <p class="overlay-title start-title">TETRIS</p>
+        <div id="start-records" class="records-block"></div>
+        <div class="start-buttons">
+          <button id="play-btn">Jugar</button>
+          <button id="reset-records-btn" class="btn-secondary">Resetear records</button>
+        </div>
       </div>
     </div>
   </div>

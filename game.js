@@ -36,6 +36,46 @@ const BOMB = 9;                      // power-up: destruye un área 3x3 al bloqu
 const BOMB_INTERVAL = 5 * 60 * 1000; // garantía: al menos una bomba cada 5 min de juego activo
 const BOMB_CHANCE = 0.04;            // probabilidad aleatoria por pieza generada
 
+// ---- Skins / temas visuales ----
+// Cada skin define su paleta (mismo índice 1–9 que COLORS/PIECES), color de fondo
+// y de rejilla del tablero (null = hereda del tema claro/oscuro) y su función de
+// dibujo de celda. Las funciones drawCell* están declaradas más abajo (hoisted).
+const NEON_COLORS = [
+  null,
+  '#18f0ff', // I
+  '#faff00', // O
+  '#c400ff', // T
+  '#39ff14', // S
+  '#ff1f5a', // Z
+  '#2e7bff', // J
+  '#ff8a00', // L
+  '#b0bec5', // Nut
+  '#222831', // Bomba
+];
+
+const PASTEL_COLORS = [
+  null,
+  '#a0e7e5', // I
+  '#fdfd96', // O
+  '#d9b8f1', // T
+  '#b5ead7', // S
+  '#ffb3ba', // Z
+  '#a2c8f0', // J
+  '#ffd8a8', // L
+  '#c9ccd6', // Nut
+  '#222831', // Bomba
+];
+
+const SKINS = {
+  retro:  { label: 'Retro',     colors: COLORS,        bg: null,      gridLine: null,      drawCell: drawCellRetro },
+  neon:   { label: 'Neon',      colors: NEON_COLORS,   bg: '#050507', gridLine: '#0e2a30', drawCell: drawCellNeon },
+  pastel: { label: 'Pastel',    colors: PASTEL_COLORS, bg: null,      gridLine: null,      drawCell: drawCellPastel },
+  pixel:  { label: 'Pixel Art', colors: COLORS,        bg: null,      gridLine: null,      drawCell: drawCellPixel },
+};
+
+const SKIN_KEY = 'tetris-skin';
+let currentSkin = 'retro';
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -48,6 +88,7 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const skinSelect = document.getElementById('skin-select');
 
 const THEME_KEY = 'tetris-theme';
 
@@ -226,6 +267,77 @@ function drawBombCell(context, x, y, size) {
   context.stroke();
 }
 
+function roundRectPath(context, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+// --- Renderers de celda por skin (context, x, y, size, color) ---
+
+// Retro: bloque cuadrado plano con highlight superior (estilo original).
+function drawCellRetro(context, x, y, size, color) {
+  context.fillStyle = color;
+  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+}
+
+// Neon: núcleo oscuro con borde brillante y glow vía shadowBlur.
+function drawCellNeon(context, x, y, size, color) {
+  const px = x * size, py = y * size;
+  context.save();
+  context.shadowColor = color;
+  context.shadowBlur = size * 0.55;
+  context.fillStyle = color;
+  context.fillRect(px + 3, py + 3, size - 6, size - 6);
+  context.restore();
+  context.fillStyle = 'rgba(0,0,0,0.55)';
+  context.fillRect(px + 6, py + 6, size - 12, size - 12);
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  context.strokeRect(px + 4, py + 4, size - 8, size - 8);
+}
+
+// Pastel: relleno suave con esquinas redondeadas y brillo tenue.
+function drawCellPastel(context, x, y, size, color) {
+  const px = x * size + 2, py = y * size + 2, s = size - 4;
+  const r = Math.max(3, size * 0.22);
+  context.fillStyle = color;
+  roundRectPath(context, px, py, s, s, r);
+  context.fill();
+  context.fillStyle = 'rgba(255,255,255,0.4)';
+  roundRectPath(context, px + 2, py + 2, s - 4, s * 0.38, r * 0.6);
+  context.fill();
+}
+
+// Pixel art: bloque con bisel claro/oscuro y píxeles de textura (determinista).
+function drawCellPixel(context, x, y, size, color) {
+  const px = x * size, py = y * size;
+  const u = size / 6;
+  context.fillStyle = color;
+  context.fillRect(px, py, size, size);
+  // bisel: luz arriba/izquierda, sombra abajo/derecha
+  context.fillStyle = 'rgba(255,255,255,0.22)';
+  context.fillRect(px, py, size, u);
+  context.fillRect(px, py, u, size);
+  context.fillStyle = 'rgba(0,0,0,0.3)';
+  context.fillRect(px, py + size - u, size, u);
+  context.fillRect(px + size - u, py, u, size);
+  // píxeles de textura
+  context.fillStyle = 'rgba(0,0,0,0.15)';
+  context.fillRect(px + u * 2, py + u * 2, u, u);
+  context.fillRect(px + u * 3, py + u * 4, u, u);
+  context.fillStyle = 'rgba(255,255,255,0.14)';
+  context.fillRect(px + u * 4, py + u * 2, u, u);
+  context.fillRect(px + u * 2, py + u * 4, u, u);
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
   context.globalAlpha = alpha ?? 1;
@@ -234,12 +346,8 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
     context.globalAlpha = 1;
     return;
   }
-  const color = COLORS[colorIndex];
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  const skin = SKINS[currentSkin];
+  skin.drawCell(context, x, y, size, skin.colors[colorIndex]);
   context.globalAlpha = 1;
 }
 
@@ -379,12 +487,24 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+// Resuelve fondo y rejilla del tablero: la skin manda; si define null, hereda del tema.
+function updateBoardStyle() {
+  const skin = SKINS[currentSkin];
+  const root = getComputedStyle(document.documentElement);
+  const themeGrid = root.getPropertyValue('--grid-line').trim();
+  const themeBg = root.getPropertyValue('--board-bg').trim();
+  gridLineColor = skin.gridLine || themeGrid;
+  const bg = skin.bg || themeBg;
+  canvas.style.background = bg;
+  nextCanvas.style.background = bg;
+}
+
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const isLight = theme === 'light';
   themeToggle.setAttribute('aria-checked', String(isLight));
   themeToggle.setAttribute('aria-label', isLight ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro');
-  gridLineColor = getComputedStyle(document.documentElement).getPropertyValue('--grid-line').trim();
+  updateBoardStyle();
 }
 
 function initTheme() {
@@ -399,5 +519,25 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem(THEME_KEY, newTheme);
 });
 
+// Aplica una skin sin recargar: cambia paleta, fondo/rejilla y refresca la preview.
+function applySkin(skin) {
+  if (!SKINS[skin]) skin = 'retro';
+  currentSkin = skin;
+  skinSelect.value = skin;
+  updateBoardStyle();
+  if (next) drawNext(); // el tablero se repinta solo en el loop; la preview no
+}
+
+function initSkin() {
+  const saved = localStorage.getItem(SKIN_KEY);
+  applySkin(SKINS[saved] ? saved : 'retro');
+}
+
+skinSelect.addEventListener('change', () => {
+  applySkin(skinSelect.value);
+  localStorage.setItem(SKIN_KEY, currentSkin);
+});
+
 initTheme();
+initSkin();
 init();

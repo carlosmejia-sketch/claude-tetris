@@ -13,6 +13,7 @@ const COLORS = [
   '#e57373', // Z - red
   '#64b5f6', // J - pale blue
   '#ffb74d', // L - orange
+  '#90a4ae', // Nut - gris acero
 ];
 
 const PIECES = [
@@ -24,6 +25,7 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[8,8,8],[8,0,8],[8,8,8]],                  // Nut (tuerca)
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
@@ -51,7 +53,7 @@ function createBoard() {
 }
 
 function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+  const type = Math.floor(Math.random() * 8) + 1;
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -95,6 +97,11 @@ function merge() {
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
         board[current.y + r][current.x + c] = current.shape[r][c];
+  // La tuerca (tipo 8) tapa su hueco central al bloquear para que la línea pueda limpiarse
+  if (current.type === 8) {
+    const cy = current.y + 1, cx = current.x + 1;
+    if (cy >= 0 && cy < ROWS && cx >= 0 && cx < COLS) board[cy][cx] = 8;
+  }
 }
 
 function clearLines() {

@@ -14,6 +14,7 @@ const COLORS = [
   '#64b5f6', // J - pale blue
   '#ffb74d', // L - orange
   '#90a4ae', // Nut - gris acero
+  '#222831', // Bomba (se dibuja con render propio)
 ];
 
 const PIECES = [
@@ -26,9 +27,14 @@ const PIECES = [
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
   [[8,8,8],[8,0,8],[8,8,8]],                  // Nut (tuerca)
+  [[9]],                                       // Bomba (power-up 1x1)
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+
+const BOMB = 9;                      // power-up: destruye un área 3x3 al bloquearse
+const BOMB_INTERVAL = 5 * 60 * 1000; // garantía: al menos una bomba cada 5 min de juego activo
+const BOMB_CHANCE = 0.04;            // probabilidad aleatoria por pieza generada
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -46,16 +52,31 @@ const themeToggle = document.getElementById('theme-toggle');
 const THEME_KEY = 'tetris-theme';
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let playTime, lastBombTime;
 let gridLineColor = '#22222e';
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
-function randomPiece() {
-  const type = Math.floor(Math.random() * 8) + 1;
+function makePiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function randomPiece() {
+  return makePiece(Math.floor(Math.random() * 8) + 1);
+}
+
+// Genera la próxima pieza: aleatoriamente puede ser bomba, y se fuerza una bomba
+// si han pasado 5 min de juego activo sin que aparezca (garantía mínima).
+function generateNext() {
+  const overdue = playTime - lastBombTime >= BOMB_INTERVAL;
+  if (overdue || Math.random() < BOMB_CHANCE) {
+    lastBombTime = playTime;
+    return makePiece(BOMB);
+  }
+  return randomPiece();
 }
 
 function collide(shape, ox, oy) {
@@ -92,7 +113,18 @@ function tryRotate() {
   }
 }
 
+// Limpia un área 3x3 del tablero centrada en (cx, cy).
+function explodeBomb(cx, cy) {
+  for (let r = cy - 1; r <= cy + 1; r++)
+    for (let c = cx - 1; c <= cx + 1; c++)
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) board[r][c] = 0;
+}
+
 function merge() {
+  if (current.type === BOMB) {
+    explodeBomb(current.x, current.y);
+    return;
+  }
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
@@ -154,7 +186,7 @@ function lockPiece() {
 
 function spawn() {
   current = next;
-  next = randomPiece();
+  next = generateNext();
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
@@ -167,10 +199,42 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
+function drawBombCell(context, x, y, size) {
+  const cx = x * size + size / 2;
+  const cy = y * size + size / 2;
+  const r = size / 2 - 2;
+  // cuerpo
+  context.fillStyle = '#222831';
+  context.beginPath();
+  context.arc(cx, cy, r, 0, Math.PI * 2);
+  context.fill();
+  // borde para contraste en tema claro y oscuro
+  context.strokeStyle = '#e57373';
+  context.lineWidth = 2;
+  context.stroke();
+  // brillo
+  context.fillStyle = 'rgba(255,255,255,0.35)';
+  context.beginPath();
+  context.arc(cx - r * 0.3, cy - r * 0.3, r * 0.28, 0, Math.PI * 2);
+  context.fill();
+  // mecha
+  context.strokeStyle = '#ffb74d';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(cx, cy - r);
+  context.lineTo(cx + r * 0.5, cy - r - 4);
+  context.stroke();
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
+  if (colorIndex === BOMB) {
+    drawBombCell(context, x, y, size);
+    context.globalAlpha = 1;
+    return;
+  }
+  const color = COLORS[colorIndex];
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
   // highlight
@@ -254,6 +318,7 @@ function togglePause() {
 function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
+  playTime += dt;
   dropAccum += dt;
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
@@ -276,8 +341,10 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  playTime = 0;
+  lastBombTime = 0;
   lastTime = performance.now();
-  next = randomPiece();
+  next = generateNext();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');

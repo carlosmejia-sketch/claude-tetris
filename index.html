@@ -68,6 +68,40 @@
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>
+
+    <div id="pause-menu" class="overlay pause-menu hidden">
+      <div class="overlay-box menu-box">
+        <p class="menu-title">PAUSA</p>
+
+        <div id="menu-main" class="menu-view">
+          <button class="menu-btn" id="resume-btn" type="button">Reanudar</button>
+          <button class="menu-btn" id="menu-restart-btn" type="button">Reiniciar</button>
+          <button class="menu-btn" id="controls-btn" type="button">Ver controles</button>
+
+          <div class="menu-field">
+            <span class="menu-field-label">Nivel inicial</span>
+            <div class="level-selector">
+              <button id="level-down" class="level-step" type="button" aria-label="Bajar nivel inicial">−</button>
+              <span id="start-level-value">1</span>
+              <button id="level-up" class="level-step" type="button" aria-label="Subir nivel inicial">+</button>
+            </div>
+          </div>
+          <p class="menu-hint">Se aplica en la próxima partida.</p>
+        </div>
+
+        <div id="menu-controls" class="menu-view hidden">
+          <ul class="menu-controls-list">
+            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+            <li><kbd>↑</kbd> / <kbd>X</kbd> rotar</li>
+            <li><kbd>↓</kbd> bajar</li>
+            <li><kbd>Space</kbd> caída dura</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+            <li>💣 bomba: destruye 3×3</li>
+          </ul>
+          <button class="menu-btn" id="controls-back-btn" type="button">Volver</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="game.js"></script>

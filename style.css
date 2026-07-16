@@ -254,3 +254,113 @@ kbd {
 #restart-btn:hover {
   background: var(--btn-hover-bg);
 }
+
+/* ---- Menú de pausa ---- */
+.menu-box {
+  gap: 16px;
+  width: 220px;
+}
+
+.menu-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--overlay-title-color);
+}
+
+.menu-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu-view.hidden {
+  display: none;
+}
+
+.menu-btn {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+.menu-btn:hover {
+  background: var(--btn-hover-bg);
+}
+
+.menu-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.menu-field-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--controls-color);
+  font-weight: 600;
+}
+
+.level-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.level-step {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--board-border);
+  background: var(--board-bg);
+  color: var(--value-color);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.level-step:hover {
+  border-color: var(--btn-bg);
+}
+
+#start-level-value {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--value-color);
+  min-width: 24px;
+  text-align: center;
+}
+
+.menu-hint {
+  font-size: 11px;
+  color: var(--controls-color);
+  text-align: center;
+}
+
+.menu-controls-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.menu-controls-list li {
+  font-size: 13px;
+  color: var(--controls-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
